@@ -1,0 +1,16 @@
+---
+
+name: matrix test
+on:
+  push:
+
+
+
+jobs:
+  say_hello:
+    runs-on: ubuntu-latest
+    steps:
+    # Install local deps if this action is being run locally
+    - name: say_hello
+      run: |
+        echo "Salve juninho"

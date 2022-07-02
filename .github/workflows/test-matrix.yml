@@ -1,0 +1,52 @@
+name: Test Build, Push images to ECR
+
+on:
+  pull_request:
+    paths:
+      - "images/*/Dockerfile"
+
+jobs:
+  build-matrix:
+    runs-on: small-runner
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+
+      - name: Get Changed Files
+        id: files
+        uses: jitterbit/get-changed-files@v1
+        
+      - name: Dockerfiles
+        id: dockerfiles
+        run: |
+          for changed_file in ${{ steps.files.outputs.all }}; do
+            if [[ $changed_file = */Dockerfile ]]; then
+                dockerfiles+="\"$changed_file\","
+            fi
+          done
+          echo "::set-output name=dockerfiles::$(echo "{\"dockerfiles\": [${dockerfiles%,}]}")"
+        
+    outputs:
+      dockerfiles: ${{ steps.dockerfiles.outputs.dockerfiles }}
+      image: ${{ steps.dockerfiles.outputs.labels }}
+
+  ci:
+    needs: build-matrix
+    runs-on: small-runner
+    strategy:
+        matrix: 
+          app: [{"app": "kong", "version": "2.1", "dockerfile": "images/kong/Dockerfile"}, {"app": "deck", "version": "2.2", "dockerfile": "images/deck/Dockerfile"}]
+    steps:
+      - uses: actions/github-script@v6
+        id: set-result
+        with:
+          script: console.log(process.env)
+        env:
+          obj: "${{ matrix.app.app }}"
+
+#      - run: |
+#          echo ${{ fromJson( matrix.app ) }}
+#          echo ${{ fromJson( matrix.version ) }}
+
